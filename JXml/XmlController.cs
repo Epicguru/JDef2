@@ -130,7 +130,7 @@ namespace JXml
             T returnValue = (T)CreateAndPopulate(toFill, doc.FirstContentNode(), rootType);
 
             watch.Stop();
-            Console.WriteLine($"Took {watch.Elapsed.TotalMilliseconds:F2} ms");
+            //Console.WriteLine($"Took {watch.Elapsed.TotalMilliseconds:F2} ms");
 
             return returnValue;
             object CreateAndPopulate(object existing, XmlNode rootNode, Type type)
@@ -159,15 +159,22 @@ namespace JXml
                     type = newType;
                 }
 
+                bool isArrayType = IsArrayType(type);
+                bool isListType = IsListType(type);
+                bool isDictType = IsDictionaryType(type);
                 if (customResolvers.TryGetValue(type, out var custom))
                 {
+                    //Console.WriteLine($"Using custom resolver for {type.Name}: {rootNode.GetXPath()}");
                     return custom.Invoke(new CustomResolverArgs()
                     {
                         XmlNode = rootNode,
                         ExistingObject = existing,
                         Field = currentField,
                         RootObject = rootObject,
-                        ParentObject = parentObject
+                        ParentObject = parentObject,
+                        IsArray = isArrayType,
+                        IsList = isListType,
+                        IsDictionary = isDictType
                     });
                 }
 
@@ -180,9 +187,6 @@ namespace JXml
 
                 var loader = GetRootTypeSerializer(type);
                 bool isBasic = loader != null;
-                bool isArrayType = IsArrayType(type);
-                bool isCollectionType = IsListType(type);
-                bool isDictType = IsDictionaryType(type);
 
                 if (isArrayType)
                 {
@@ -216,7 +220,7 @@ namespace JXml
                     return created;
                 }
 
-                if (isCollectionType)
+                if (isListType)
                 {
                     if (!type.IsGenericType)
                     {
@@ -462,7 +466,7 @@ namespace JXml
 
         private bool IsListType(Type t)
         {
-            return typeof(ICollection).IsAssignableFrom(t);
+            return typeof(IList).IsAssignableFrom(t);
         }
 
         private bool IsDictionaryType(Type t)

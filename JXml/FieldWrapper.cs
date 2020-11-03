@@ -80,6 +80,28 @@ namespace JXml
             _isIgnoreChecked = false;
         }
 
+        public object ReadValue(object instance)
+        {
+            if (IsField)
+                return Field.GetValue(instance);
+            if (IsProperty)
+                return Property.GetValue(instance);
+
+            return null;
+        }
+
+        public void WriteValue(object instance, object value)
+        {
+            if (IsField)
+            {
+                Field.SetValue(instance, value);
+            }
+            else if (IsProperty)
+            {
+                Property.SetValue(instance, value);
+            }
+        }
+
         public override string ToString()
         {
             if (!IsValid)

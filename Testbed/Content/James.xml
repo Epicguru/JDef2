@@ -1,0 +1,12 @@
+﻿
+<James class="TestBed.PersonDef">
+  <Name>James</Name>
+  <Age>18</Age>
+  <Test>
+    <li key="AYO">12</li>
+  </Test>
+  <Shitbox>
+    <Value>420</Value>
+    <Owner>Zak</Owner>
+  </Shitbox>
+</James>

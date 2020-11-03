@@ -1,4 +1,5 @@
-﻿using JXml;
+﻿using JDef.DummyTypes;
+using JXml;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -47,17 +48,18 @@ namespace JDef
             if (string.IsNullOrWhiteSpace(defName))
                 throw new Exception("Null or blank def name! Cannot load def reference.");
 
+            def.FlagDummyTypes();
+
             def.AddPostProcessAction(d =>
             {
                 Def found = database.GetNamed(defName);
-                Console.WriteLine($"Found: {found.Name}");
-                if (args.Field.IsField)
-                {
-                    args.Field.Field.SetValue(args.ParentObject, found);
-                }
+                //if (args.Field.IsField)
+                //{
+                //    args.Field.Field.SetValue(args.ParentObject, found);
+                //}
             });
 
-            return null;
+            return new DummyDef(defName, this.database);
         }
 
         public void Load(IEnumerable<string> xmlData)
@@ -71,18 +73,29 @@ namespace JDef
             }
         }
 
-        public void Load(string xmlData)
+        public void Load(XmlReader reader)
         {
-            if (string.IsNullOrWhiteSpace(xmlData))
-                throw new ArgumentNullException(nameof(xmlData));
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
 
-            var reader = XmlReader.Create(new StringReader(xmlData));
             reader.MoveToContent();
 
             string rootName = reader.Name;
-            Console.WriteLine("Root name: " + rootName);
             if (string.IsNullOrWhiteSpace(rootName))
                 throw new Exception("Root name is null or blank!");
+
+            if (rootName == "Defs")
+            {
+                // Special, it's a list of defs.
+                while (reader.Read())
+                {
+                    if (reader.NodeType == XmlNodeType.Element)
+                    {
+                        Load(reader);
+                    }
+                }
+                return;
+            }
 
             string parentName = reader.GetAttribute("parent");
             string className = reader.GetAttribute("class");
@@ -90,15 +103,17 @@ namespace JDef
             if (bool.TryParse(reader.GetAttribute("abstract"), out bool b))
                 isAbstract = b;
 
-            Console.WriteLine($"Parent name: {parentName ?? "null"}");
-            Console.WriteLine($"Class name: {className ?? "null"}");
-            Console.WriteLine($"Abstract: {isAbstract}");
+            //Console.WriteLine($"Parent name: {parentName ?? "null"}");
+            //Console.WriteLine($"Class name: {className ?? "null"}");
+            //Console.WriteLine($"Abstract: {isAbstract}");
 
             bool hasExisting = nameToRawDataIndex.ContainsKey(rootName);
             if (hasExisting)
                 throw new Exception($"Duplicate def name: '{rootName}'.");
 
             nameToRawDataIndex.Add(rootName, rawData.Count);
+
+            string xmlData = reader.ReadOuterXml();
             rawData.Add(new PreProcessedDef()
             {
                 Name = rootName,
@@ -107,6 +122,15 @@ namespace JDef
                 ClassName = className,
                 XmlData = xmlData
             });
+        }
+
+        public void Load(string xmlData)
+        {
+            if (string.IsNullOrWhiteSpace(xmlData))
+                throw new ArgumentNullException(nameof(xmlData));
+
+            using var reader = XmlReader.Create(new StringReader(xmlData));
+            Load(reader);
         }
 
         public List<Def> Process()
@@ -192,7 +216,7 @@ namespace JDef
                 }
 
                 // 5.2: Assign name.
-                instance.Name = raw.Name;
+                instance.DefName = raw.Name;
 
                 // Step 6: Done!
                 defs.Add(instance);

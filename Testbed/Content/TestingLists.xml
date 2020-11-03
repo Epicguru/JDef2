@@ -1,0 +1,46 @@
+﻿<Defs>
+
+  <Person class="Testbed.PersonDef" abstract="true">
+    <!-- Base person class -->
+  </Person>
+  
+  <Curtis parent="Person">
+    <Name>Escrutis</Name>
+    <Age>19</Age>
+  </Curtis>
+
+  <Zak parent="Person">
+    <Name>Zak</Name>
+    <Age>13</Age>
+    <FavoritePerson>Curtis</FavoritePerson>
+    <Friends>
+      <li>Curtis</li>
+      <li>James</li>
+    </Friends>
+  </Zak>
+
+  <ZakReq parent="Zak">
+    <Name>Zak Requiem</Name>
+    <Age>15</Age>
+    <FavoritePerson>James</FavoritePerson>
+    <Friends mode="subtract">
+      <li>Curtis</li>
+    </Friends>
+  </ZakReq>
+
+  <Pablo class="Testbed.MageDef">
+    <Name>Pablo</Name>
+    <Age>18</Age>
+    <Minions>
+      <li>
+        <Name>Horse</Name>
+        <LegCount>4</LegCount>
+      </li>
+      <li class="Testbed.Fish">
+        <Name>Tuna</Name>
+        <LegCount>0</LegCount>
+      </li>
+    </Minions>
+  </Pablo>
+  
+</Defs>

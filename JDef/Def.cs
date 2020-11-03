@@ -1,13 +1,18 @@
-﻿using System;
+﻿using JDef.DummyTypes;
+using System;
 using System.Collections.Generic;
 using System.Xml.Serialization;
 
 namespace JDef
 {
+    [CanBeDummy]
     public abstract class Def
     {
         [XmlIgnore]
-        public string Name { get; internal set; }
+        public string DefName { get; internal set; }
+
+        [XmlIgnore]
+        internal bool hasDummyTypes;
 
         public virtual void PostProcess()
         {
@@ -33,9 +38,18 @@ namespace JDef
             postProcessActions.Add(action);
         }
 
+        /// <summary>
+        /// Should be called by custom resolvers to indicate that this def has 1 or more field
+        /// that is a dummy type and needs replacing.
+        /// </summary>
+        public void FlagDummyTypes()
+        {
+            this.hasDummyTypes = true;
+        }
+
         public override string ToString()
         {
-            return $"[{GetType().Name}] {Name}";
+            return $"[{GetType().Name}] {DefName}";
         }
 
         internal static void Error(string msg, Exception e = null)

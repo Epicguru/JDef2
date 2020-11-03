@@ -1,0 +1,14 @@
+﻿
+<JamesRequiem parent="James">
+  <Name>James Requiem</Name>
+  <Age>22</Age>
+  <Enemies>
+    <li>Curtis</li>
+  </Enemies>
+  <Others>
+    <li key="Doctor">Pedro</li>
+  </Others>
+  <Shitbox>
+    <Value>69</Value>
+  </Shitbox>
+</JamesRequiem>

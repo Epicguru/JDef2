@@ -1,4 +1,5 @@
-﻿using System;
+﻿using JDef.DummyTypes;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -10,6 +11,14 @@ namespace JDef
     /// </summary>
     public class DefDatabase : IDisposable
     {
+        public int DefCount
+        {
+            get
+            {
+                return allDefs.Count;
+            }
+        }
+
         private List<Def> allDefs = new List<Def>();
         private Dictionary<string, Def> namedDefs = new Dictionary<string, Def>();
         private DefLoader loader;
@@ -34,6 +43,15 @@ namespace JDef
             return GetNamed(name) as T;
         }
 
+        public IEnumerable<T> GetAllOfType<T>()
+        {
+            foreach (var def in allDefs)
+            {
+                if (def is T t)
+                    yield return t;
+            }
+        }
+
         public void LoadFromDir(string dir)
         {
             if (!Directory.Exists(dir))
@@ -47,6 +65,14 @@ namespace JDef
                 data[i] = File.ReadAllText(path);
             }
             loader.Load(data);
+        }
+
+        public void Load(string xmlData)
+        {
+            if (string.IsNullOrWhiteSpace(xmlData))
+                throw new ArgumentNullException(nameof(xmlData));
+
+            loader.Load(xmlData);
         }
 
         public void Process()
@@ -63,6 +89,10 @@ namespace JDef
         {
             foreach(var def in allDefs)
             {
+                if (def.hasDummyTypes)
+                {
+                    DummyTypeReplacer.ReplaceDummyTypes(def);
+                }
                 def.PostProcess();
             }
         }
@@ -72,7 +102,7 @@ namespace JDef
             if (def == null)
                 return;
 
-            namedDefs.Add(def.Name, def);
+            namedDefs.Add(def.DefName, def);
             allDefs.Add(def);
 
             Console.WriteLine($"Loaded a {def.GetType().FullName}: {def}");
@@ -83,7 +113,7 @@ namespace JDef
             if (def == null)
                 return;
 
-            namedDefs.Add(def.Name, def);
+            namedDefs.Add(def.DefName, def);
             allDefs.Add(def);
         }
 
