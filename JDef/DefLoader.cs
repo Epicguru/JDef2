@@ -36,6 +36,16 @@ namespace JDef
             controller.AddCustomResolver(typeof(Def), DefResolver);
         }
 
+        public void AddCustomResolver(Type type, Func<CustomResolverArgs, object> func)
+        {
+            controller.AddCustomResolver(type, func);
+        }
+
+        public void AddRootTypeResolver(IRootTypeSerializer rts)
+        {
+            controller.AddRootTypeSerializer(rts);
+        }
+
         private object DefResolver(CustomResolverArgs args)
         {
             if (!(args.RootObject is Def def))

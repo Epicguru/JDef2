@@ -1,4 +1,5 @@
 ﻿using JDef.DummyTypes;
+using JXml;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -52,12 +53,22 @@ namespace JDef
             }
         }
 
+        public void AddRootTypeResolver(IRootTypeSerializer rts)
+        {
+            this.loader?.AddRootTypeResolver(rts);
+        }
+
+        public void AddCustomResolver(Type type, Func<CustomResolverArgs, object> func)
+        {
+            this.loader?.AddCustomResolver(type, func);
+        }
+
         public void LoadFromDir(string dir)
         {
             if (!Directory.Exists(dir))
                 throw new DirectoryNotFoundException($"Cannot load, dir not found: {dir}");
 
-            string[] files = Directory.GetFiles(dir, "*.xml");
+            string[] files = Directory.GetFiles(dir, "*.xml", SearchOption.AllDirectories);
             string[] data = new string[files.Length];
             for (int i = 0; i < files.Length; i++)
             {

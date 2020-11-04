@@ -1,4 +1,4 @@
-﻿using JXml.Serializers;
+using JXml.Serializers;
 using JXml.Utils;
 using System;
 using System.Collections;
@@ -171,10 +171,7 @@ namespace JXml
                         ExistingObject = existing,
                         Field = currentField,
                         RootObject = rootObject,
-                        ParentObject = parentObject,
-                        IsArray = isArrayType,
-                        IsList = isListType,
-                        IsDictionary = isDictType
+                        ParentObject = parentObject
                     });
                 }
 
