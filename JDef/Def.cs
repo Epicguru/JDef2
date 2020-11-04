@@ -8,6 +8,22 @@ namespace JDef
     [CanBeDummy]
     public abstract class Def
     {
+        /// <summary>
+        /// Changes a def's name. You will normally never want to do this.
+        /// Only use if you know exactly what you are doing.
+        /// </summary>
+        /// <param name="def">The def.</param>
+        /// <param name="newName">The new name. Must not be null or blank.</param>
+        public static void SetName(Def def, string newName)
+        {
+            if (def == null)
+                throw new ArgumentNullException(nameof(def));
+            if (string.IsNullOrEmpty(newName))
+                throw new ArgumentNullException(nameof(newName), "The new name must not be null or empty.");
+
+            def.DefName = newName;
+        }
+
         [XmlIgnore]
         public string DefName { get; internal set; }
 
@@ -39,6 +55,16 @@ namespace JDef
         }
 
         /// <summary>
+        /// Called after the def has been loaded, and after post processing.
+        /// Should be used to report error in the def.
+        /// Default implementation does nothing.
+        /// </summary>
+        public virtual void Validate()
+        {
+
+        }
+
+        /// <summary>
         /// Should be called by custom resolvers to indicate that this def has 1 or more field
         /// that is a dummy type and needs replacing.
         /// </summary>
@@ -50,16 +76,6 @@ namespace JDef
         public override string ToString()
         {
             return DefName;
-        }
-
-        internal static void Error(string msg, Exception e = null)
-        {
-            var oldColor = Console.ForegroundColor;
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"JDef Error: {msg}");
-            if(e != null)
-                Console.WriteLine($"Exception:\n{e}");
-            Console.ForegroundColor = oldColor;
         }
     }
 }
