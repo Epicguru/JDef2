@@ -15,6 +15,7 @@ namespace JXml
         private Dictionary<string, FieldWrapper> cachedFields = new Dictionary<string, FieldWrapper>();
         private XmlDocument doc = new XmlDocument();
         private Dictionary<Type, Func<CustomResolverArgs, object>> customResolvers = new Dictionary<Type, Func<CustomResolverArgs, object>>();
+        private Dictionary<Type, Type> customResolverTypeMap = new Dictionary<Type, Type>();
 
         public XmlController()
         {
@@ -34,6 +35,7 @@ namespace JXml
             AddRootTypeSerializer(new BoolParser());
             AddRootTypeSerializer(new CharParser());
             AddRootTypeSerializer(new Vector2Parser());
+            AddRootTypeSerializer(new TypeParser());
         }
 
         public void AddRootTypeSerializer(IRootTypeSerializer serializer)
@@ -159,12 +161,17 @@ namespace JXml
                     type = newType;
                 }
 
+                var loader = GetRootTypeSerializer(type);
+                bool isBasic = loader != null;
                 bool isArrayType = IsArrayType(type);
                 bool isListType = IsListType(type);
                 bool isDictType = IsDictionaryType(type);
-                if (customResolvers.TryGetValue(type, out var custom))
+                bool isEnumType = IsEnumType(type);
+                bool tryUseCustom = !isRootAndFilling && !isBasic && !isArrayType && !isListType && !isDictType && !isEnumType && !type.IsPrimitive;
+
+                object DoCustom(Type baseType)
                 {
-                    //Console.WriteLine($"Using custom resolver for {type.Name}: {rootNode.GetXPath()}");
+                    var custom = customResolvers[baseType];
                     return custom.Invoke(new CustomResolverArgs()
                     {
                         XmlNode = rootNode,
@@ -175,15 +182,34 @@ namespace JXml
                     });
                 }
 
-                if ((type.IsAbstract || type.IsInterface) && !isRootAndFilling)
+                if (tryUseCustom)
+                {
+                    if (customResolverTypeMap.TryGetValue(type, out var foundBaseType))
+                    {
+                        if(foundBaseType != null)
+                            return DoCustom(foundBaseType);
+                    }
+                    else
+                    {
+                        foreach (var ct in customResolvers)
+                        {
+                            var crType = ct.Key;
+                            if (crType.IsAssignableFrom(type))
+                            {
+                                // Found it!
+                                customResolverTypeMap.Add(type, crType);
+                                return DoCustom(crType);
+                            }
+                        }
+                    }
+                }
+
+                if ((type.IsAbstract || type.IsInterface) && !isRootAndFilling && !isBasic)
                 {
                     string problem = type.IsInterface ? "an interface" : "an abstract class";
                     Console.WriteLine($"[ERROR] Node {rootNode.GetXPath()}: {type.FullName} is {problem} and so cannot be instantiated. Please use the class='typeName' attribute to specify a concrete class. Node will be ignored.");
                     return null;
                 }
-
-                var loader = GetRootTypeSerializer(type);
-                bool isBasic = loader != null;
 
                 if (isArrayType)
                 {

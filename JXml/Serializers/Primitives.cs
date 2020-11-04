@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using JXml.Utils;
+using Microsoft.Xna.Framework;
 using System;
 using System.Xml;
 
@@ -13,9 +14,12 @@ namespace JXml.Serializers
             return o?.ToString();
         }
 
-        protected Exception MakeException(string message, Exception innerException = null)
+        protected Exception MakeException(XmlNode node, string message, Exception innerException = null)
         {
-            return new XmlException(message, innerException);
+            if(node != null)
+                return new XmlException($"[{node.GetXPath()}] {message}", innerException);
+            else
+                return new XmlException(message, innerException);
         }
     }
 
@@ -30,7 +34,7 @@ namespace JXml.Serializers
             if (int.TryParse(text, out int value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as an int (int32).");
+            throw MakeException(node, $"Failed to parse '{text}' as an int (int32).");
         }
     }
 
@@ -45,7 +49,7 @@ namespace JXml.Serializers
             if (float.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as a float.");
+            throw MakeException(node, $"Failed to parse '{text}' as a float.");
         }
     }
 
@@ -60,7 +64,7 @@ namespace JXml.Serializers
             if (bool.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as a bool.");
+            throw MakeException(node, $"Failed to parse '{text}' as a bool.");
         }
     }
 
@@ -75,7 +79,7 @@ namespace JXml.Serializers
             if (double.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as a double.");
+            throw MakeException(node, $"Failed to parse '{text}' as a double.");
         }
     }
 
@@ -90,7 +94,7 @@ namespace JXml.Serializers
             if (byte.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as a byte.");
+            throw MakeException(node, $"Failed to parse '{text}' as a byte.");
         }
     }
 
@@ -105,7 +109,7 @@ namespace JXml.Serializers
             if (short.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as a short (int16).");
+            throw MakeException(node, $"Failed to parse '{text}' as a short (int16).");
         }
     }
 
@@ -120,7 +124,7 @@ namespace JXml.Serializers
             if (long.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as a long (int64).");
+            throw MakeException(node, $"Failed to parse '{text}' as a long (int64).");
         }
     }
 
@@ -135,7 +139,7 @@ namespace JXml.Serializers
             if (ushort.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as a ushort (uint16).");
+            throw MakeException(node, $"Failed to parse '{text}' as a ushort (uint16).");
         }
     }
 
@@ -150,7 +154,7 @@ namespace JXml.Serializers
             if (ulong.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as a ulong (uint64).");
+            throw MakeException(node, $"Failed to parse '{text}' as a ulong (uint64).");
         }
     }
 
@@ -165,7 +169,7 @@ namespace JXml.Serializers
             if (uint.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as a uint (uint32).");
+            throw MakeException(node, $"Failed to parse '{text}' as a uint (uint32).");
         }
     }
 
@@ -180,7 +184,7 @@ namespace JXml.Serializers
             if (sbyte.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as an sbyte.");
+            throw MakeException(node, $"Failed to parse '{text}' as an sbyte.");
         }
     }
 
@@ -207,7 +211,7 @@ namespace JXml.Serializers
             if (decimal.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as a decimal.");
+            throw MakeException(node, $"Failed to parse '{text}' as a decimal.");
         }
     }
 
@@ -222,7 +226,7 @@ namespace JXml.Serializers
             if (char.TryParse(text, out var value))
                 return value;
 
-            throw MakeException($"Failed to parse '{text}' as a char.");
+            throw MakeException(node, $"Failed to parse '{text}' as a char.");
         }
     }
 
@@ -236,7 +240,7 @@ namespace JXml.Serializers
 
             int index;
             if ((index = text.IndexOf(',')) == -1)
-                throw MakeException("Incorrect format: expected (x, y)");
+                throw MakeException(node, "Incorrect format: expected (x, y)");
 
             string start = text.Substring(0, index).Trim();
             string end = text.Substring(index + 1).Trim();
@@ -247,12 +251,36 @@ namespace JXml.Serializers
                 end = end.Substring(0, end.Length - 1);
 
             if (!float.TryParse(start, out float x))
-                throw MakeException($"Failed to parse X value in Vector2: '{start}'");
+                throw MakeException(node, $"Failed to parse X value in Vector2: '{start}'");
 
             if (!float.TryParse(end, out float y))
-                throw MakeException($"Failed to parse Y value in Vector2: '{end}'");
+                throw MakeException(node, $"Failed to parse Y value in Vector2: '{end}'");
 
             return new Vector2(x, y);
+        }
+    }
+
+    public class TypeParser : PrimitiveParser
+    {
+        public override Type TargetType { get; } = typeof(Type);
+
+        public override object Deserialize(XmlNode node)
+        {
+            string text = node.Value;
+
+            var found = TypeResolver.Resolve(text);
+
+            if (found == null)
+                Console.WriteLine($"[WARN] Failed to resolve type '{text}' for node {node.GetXPath()}");
+
+            return found;
+        }
+
+        public override string Serialize(object o)
+        {
+            if (o is Type t)
+                return t.FullName;
+            return o?.ToString();
         }
     }
 }

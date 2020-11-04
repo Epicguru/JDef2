@@ -49,7 +49,7 @@ namespace JDef
 
         public override string ToString()
         {
-            return $"[{GetType().Name}] {DefName}";
+            return DefName;
         }
 
         internal static void Error(string msg, Exception e = null)
