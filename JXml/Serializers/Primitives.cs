@@ -260,6 +260,110 @@ namespace JXml.Serializers
         }
     }
 
+    public class ColorParser : PrimitiveParser
+    {
+        public override Type TargetType { get; } = typeof(Color);
+
+        public override object Deserialize(XmlNode node)
+        {
+            string text = node.Value?.Trim();
+
+            if (string.IsNullOrEmpty(text))
+                throw MakeException(node, "Empty node, expected a color.");
+
+            bool isHex = text[0] == '#';
+            if (isHex)
+            {
+                Color? col = HexToColor(text);
+                if(col == null)
+                    throw MakeException(node, $"Found hexadecimal color representation, but it was not in the format #RRGGBB or #RRGGBBAA: '{text}'");
+                return col.Value;
+            }
+
+            string[] parts = text.Split(',');
+            if(parts.Length < 3 || parts.Length > 4)
+                throw MakeException(node, $"Found RGB(A) color representation, but format was incorrect. Expected (R, G, B) or (R, G, B, A).");
+
+            for (int i = 0; i < parts.Length; i++)
+            {
+                parts[i] = parts[i].Trim();
+            }
+            if (parts[0].StartsWith("("))
+                parts[0] = parts[0].Substring(1);
+            int last = parts.Length - 1;
+            if (parts[last].EndsWith(")"))
+                parts[last] = parts[last].Substring(0, parts[last].Length - 1);
+
+            if (!float.TryParse(parts[0], out float r))
+                throw MakeException(node, $"Red value has bad format. Expected a float, got '{parts[0]}'");
+            if (!float.TryParse(parts[1], out float g))
+                throw MakeException(node, $"Green value has bad format. Expected a float, got '{parts[1]}'");
+            if (!float.TryParse(parts[2], out float b))
+                throw MakeException(node, $"Blue value has bad format. Expected a float, got '{parts[2]}'");
+            float a = 1f;
+            if(parts.Length == 4)
+                if (!float.TryParse(parts[3], out a))
+                    throw MakeException(node, $"Alpha value has bad format. Expected a float, got '{parts[3]}'");
+
+            return new Color(r, g, b, a);
+        }
+
+        private Color? HexToColor(string str)
+        {
+            // In the format #RRGGBB(AA) where the AA is optional.
+            if (str.Length != 7 && str.Length != 9)
+                return null;
+
+            str = str.ToUpper();
+            Color color = new Color();
+
+            for (int i = 0; i < (str.Length == 9 ? 4 : 3); i++)
+            {
+                char a = str[i * 2 + 1];
+                char b = str[i * 2 + 2];
+
+                int intA;
+                int intB;
+
+                if (a >= '0' && a <= '9')
+                    intA = a - '0';
+                else if (a >= 'A' && a <= 'F')
+                    intA = 10 + (a - 'A');
+                else
+                    return null;
+
+                if (b >= '0' && b <= '9')
+                    intB = b - '0';
+                else if (b >= 'A' && b <= 'F')
+                    intB = 10 + (b - 'A');
+                else
+                    return null;
+
+                int val = intB + intA * 16;
+                if (val < 0 || val > 255)
+                    return null;
+
+                switch (i)
+                {
+                    case 0:
+                        color.R = (byte)val;
+                        break;
+                    case 1:
+                        color.G = (byte)val;
+                        break;
+                    case 2:
+                        color.B = (byte)val;
+                        break;
+                    default:
+                        color.A = (byte)val;
+                        break;
+                }
+            }
+
+            return color;
+        }
+    }
+
     public class TypeParser : PrimitiveParser
     {
         public override Type TargetType { get; } = typeof(Type);

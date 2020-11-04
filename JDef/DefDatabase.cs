@@ -106,6 +106,11 @@ namespace JDef
                 }
                 def.PostProcess();
             }
+
+            foreach (var def in allDefs)
+            {
+                def.Validate();
+            }
         }
 
         private void AddDef(Def def)

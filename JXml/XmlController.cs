@@ -35,6 +35,7 @@ namespace JXml
             AddRootTypeSerializer(new BoolParser());
             AddRootTypeSerializer(new CharParser());
             AddRootTypeSerializer(new Vector2Parser());
+            AddRootTypeSerializer(new ColorParser());
             AddRootTypeSerializer(new TypeParser());
         }
 
