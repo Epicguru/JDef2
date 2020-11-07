@@ -8,6 +8,9 @@ namespace JDef
     [CanBeDummy]
     public abstract class Def
     {
+        public static event Action<Def, string, Exception> OnValidationError;
+        public static event Action<Def, string> OnValidationWarning;
+
         /// <summary>
         /// Changes a def's name. You will normally never want to do this.
         /// Only use if you know exactly what you are doing.
@@ -71,6 +74,22 @@ namespace JDef
         public void FlagDummyTypes()
         {
             this.hasDummyTypes = true;
+        }
+
+        /// <summary>
+        /// Logs a validation error.
+        /// </summary>
+        public void ValidateError(string error, Exception e = null)
+        {
+            OnValidationError?.Invoke(this, error, e);
+        }
+
+        /// <summary>
+        /// Logs a validation warning.
+        /// </summary>
+        public void ValidateWarn(string warning)
+        {
+            OnValidationWarning?.Invoke(this, warning);
         }
 
         public override string ToString()
