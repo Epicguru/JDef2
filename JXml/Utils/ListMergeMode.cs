@@ -11,6 +11,16 @@
 
         /// <summary>
         /// The values in the new list are added to the old list.
+        /// If there are duplicate items,
+        /// the value from the new list replaces the old value.
+        /// <para>[A, B, C] + [B'] => [A, B', C]</para>
+        /// Duplicate items are items (a, b) where:
+        /// <code>a.equals(b)</code>
+        /// </summary>
+        MergeReplace,
+
+        /// <summary>
+        /// The values in the new list are added to the old list.
         /// Items may included more than once.
         /// <para>[A, B, C] + [B] => [A, B, C, B]</para>
         /// </summary>

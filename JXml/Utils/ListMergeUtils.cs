@@ -49,6 +49,26 @@ namespace JXml.Utils
 
                     break;
 
+                case ListMergeMode.MergeReplace:
+                    // Add all values from the other list, if they are not already in the list.
+                    // If they already are in the list, replace it with the new value.
+                    // Useful for custom classes that override .equals()
+                    foreach (var value in secondary)
+                    {
+                        int index = main.IndexOf(value);
+                        if (index == -1)
+                        {
+                            main.Add(value);
+                        }
+                        else
+                        {
+                            main.RemoveAt(index);
+                            main.Insert(index, value);
+                        }
+                    }
+
+                    break;
+
                 case ListMergeMode.Subtract:
 
                     // Removes values from main if they are in secondary.
@@ -97,6 +117,7 @@ namespace JXml.Utils
 
                     break;
 
+                case ListMergeMode.MergeReplace: // Merge replace and normal merge have the same behaviour on dictionaries.
                 case ListMergeMode.Merge:
 
                     // Add all values from other list, if they are not already in the list.

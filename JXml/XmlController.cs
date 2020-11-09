@@ -276,7 +276,7 @@ namespace JXml
                     if (old == null)
                         return created;
 
-                    ListMergeMode mode = rootNode.TryParseAttributeEnum<ListMergeMode>("mode") ?? ListMergeMode.Merge;
+                    ListMergeMode mode = rootNode.TryParseAttributeEnum<ListMergeMode>("mode") ?? ListMergeMode.MergeReplace;
                     if((old.IsFixedSize || old.IsReadOnly) && mode != ListMergeMode.Replace)
                     {
                         Console.WriteLine($"[ERROR] Node {rootNode.GetXPath()}: This List<{listType.Name}> uses merge mode {mode}, but the list instance is read-only. New list will replace old values.");
@@ -406,7 +406,7 @@ namespace JXml
                     if(!(existing is IDictionary oldDict))
                         return created;
 
-                    ListMergeMode mode = rootNode.TryParseAttributeEnum<ListMergeMode>("mode") ?? ListMergeMode.Merge;
+                    ListMergeMode mode = rootNode.TryParseAttributeEnum<ListMergeMode>("mode") ?? ListMergeMode.MergeReplace;
                     if ((oldDict.IsFixedSize || oldDict.IsReadOnly) && mode != ListMergeMode.Replace)
                     {
                         Console.WriteLine($"[ERROR] Node {rootNode.Name}: This Dictionary<{keyType.Name}, {valueType.Name}> uses merge mode {mode}, but the dictioary instance is read-only. New dictionary will replace old values.");
