@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace JXml.Utils
 {
     internal static class ListMergeUtils
     {
+        private static IList temp = new List<object>();
+        private static IList temp2 = new List<int>();
+
         /// <summary>
         /// Modifies the main list to combine it with the elements of the secondary list.
         /// The method used to combine is set using the mode parameter.
@@ -45,7 +49,9 @@ namespace JXml.Utils
                     // Add all values from other list, if they are not already in the list.
                     foreach (var value in secondary)
                         if(!main.Contains(value))
-                            main.Add(value);
+                            temp.Add(value);
+                    foreach (var value in temp)
+                        main.Add(value);
 
                     break;
 
@@ -53,6 +59,15 @@ namespace JXml.Utils
                     // Add all values from the other list, if they are not already in the list.
                     // If they already are in the list, replace it with the new value.
                     // Useful for custom classes that override .equals()
+                    foreach (var value in secondary)
+                    { // TODO left off here, needs to work like Merge where items are inserted.
+                        int index = main.IndexOf(value);
+                        if (index != -1)
+                        {
+                            temp.Add(value);
+                        }
+                    }
+
                     foreach (var value in secondary)
                     {
                         int index = main.IndexOf(value);
@@ -82,6 +97,9 @@ namespace JXml.Utils
                     Console.WriteLine($"[ERROR] {mode} is not implemented.");
                     break;
             }
+
+            temp.Clear();
+            temp2.Clear();
         }
 
         public static void Combine(IDictionary main, IDictionary secondary, ListMergeMode mode)
