@@ -317,6 +317,7 @@ namespace JXml.Serializers
             str = str.ToUpper();
             Color color = new Color();
 
+            bool foundA = false;
             for (int i = 0; i < (str.Length == 9 ? 4 : 3); i++)
             {
                 char a = str[i * 2 + 1];
@@ -355,10 +356,14 @@ namespace JXml.Serializers
                         color.B = (byte)val;
                         break;
                     default:
+                        foundA = true;
                         color.A = (byte)val;
                         break;
                 }
             }
+
+            if (!foundA)
+                color.A = 255;
 
             return color;
         }

@@ -59,16 +59,6 @@ namespace JDef
                 throw new Exception("Null or blank def name! Cannot load def reference.");
 
             def.FlagDummyTypes();
-
-            def.AddPostProcessAction(d =>
-            {
-                Def found = database.GetNamed(defName);
-                //if (args.Field.IsField)
-                //{
-                //    args.Field.Field.SetValue(args.ParentObject, found);
-                //}
-            });
-
             return new DummyDef(defName, this.database);
         }
 
