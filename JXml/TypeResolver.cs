@@ -6,6 +6,8 @@ namespace JXml
 {
     public static class TypeResolver
     {
+        public static readonly Dictionary<string, Type> CustomTypeNames = new Dictionary<string, Type>();
+
         private static readonly Dictionary<string, Type> cache = new Dictionary<string, Type>();
         private static Assembly[] assemblies;
 
@@ -13,6 +15,11 @@ namespace JXml
         {
             if (cache.TryGetValue(className, out Type type))
                 return type;
+            if(CustomTypeNames.TryGetValue(className, out Type type2))
+            {
+                cache.Add(className, type2);
+                return type2;
+            }
 
             if (assemblies == null)
             {
