@@ -11,6 +11,12 @@ namespace JXml
 {
     public class XmlController : IDisposable
     {
+        public static event Action<string> OnLog;
+        internal static void Log(string msg)
+        {
+            OnLog?.Invoke(msg);
+        }
+
         private Dictionary<Type, IRootTypeSerializer> rootSerializers = new Dictionary<Type, IRootTypeSerializer>();
         private Dictionary<string, FieldWrapper> cachedFields = new Dictionary<string, FieldWrapper>();
         private XmlDocument doc = new XmlDocument();
@@ -95,12 +101,12 @@ namespace JXml
         {
             if (customResolvers.ContainsKey(type))
             {
-                Console.WriteLine($"[ERROR] There is already a custom resolver for type '{type.FullName}'");
+                OnLog?.Invoke($"[ERROR] There is already a custom resolver for type '{type.FullName}'");
                 return;
             }
             if(func == null)
             {
-                Console.WriteLine($"[ERROR] Null arg {nameof(func)}.");
+                OnLog?.Invoke($"[ERROR] Null arg {nameof(func)}.");
                 return;
             }
 
@@ -111,7 +117,7 @@ namespace JXml
         {
             if (!customResolvers.ContainsKey(type))
             {
-                Console.WriteLine($"[ERROR] There is no registered custom resolver for type '{type.FullName}'");
+                OnLog?.Invoke($"[ERROR] There is no registered custom resolver for type '{type.FullName}'");
                 return;
             }
 
@@ -133,7 +139,7 @@ namespace JXml
             T returnValue = (T)CreateAndPopulate(toFill, doc.FirstContentNode(), rootType);
 
             watch.Stop();
-            //Console.WriteLine($"Took {watch.Elapsed.TotalMilliseconds:F2} ms");
+            //OnLog?.Invoke($"Took {watch.Elapsed.TotalMilliseconds:F2} ms");
 
             return returnValue;
             object CreateAndPopulate(object existing, XmlNode rootNode, Type type)
@@ -146,7 +152,7 @@ namespace JXml
                     var newType = TypeResolver.Resolve(customClassName);
                     if(newType == null)
                     {
-                        Console.WriteLine($"[ERROR] Node {rootNode.GetXPath()}: Could not find custom class '{customClassName}' for node {rootNode.Name}. Node will be ignored.");
+                        OnLog?.Invoke($"[ERROR] Node {rootNode.GetXPath()}: Could not find custom class '{customClassName}' for node {rootNode.Name}. Node will be ignored.");
                         return null;
                     }
 
@@ -155,11 +161,18 @@ namespace JXml
                     if (!type.IsAssignableFrom(newType) && !currentTypeCanGoIntoRoot)
                     {
                         string problem = type.IsInterface ? "does not implement interface" : "is not a subclass of";
-                        Console.WriteLine($"[ERROR] Node {rootNode.GetXPath()}: {newType.FullName} {problem} {type.FullName}. Node will be ignored.");
+                        OnLog?.Invoke($"[ERROR] Node {rootNode.GetXPath()}: {newType.FullName} {problem} {type.FullName}. Node will be ignored.");
                         return null;
                     }
 
                     type = newType;
+                }
+
+                if (type.IsRealNullable())
+                {
+                    Type replacement = Nullable.GetUnderlyingType(type);
+                    //OnLog?.Invoke($"{type.Name} is a nullable type, using {replacement.Name} instead.");
+                    type = replacement;
                 }
 
                 var loader = GetRootTypeSerializer(type);
@@ -208,7 +221,7 @@ namespace JXml
                 if ((type.IsAbstract || type.IsInterface) && !isRootAndFilling && !isBasic)
                 {
                     string problem = type.IsInterface ? "an interface" : "an abstract class";
-                    Console.WriteLine($"[ERROR] Node {rootNode.GetXPath()}: {type.FullName} is {problem} and so cannot be instantiated. Please use the class='typeName' attribute to specify a concrete class. Node will be ignored.");
+                    OnLog?.Invoke($"[ERROR] Node {rootNode.GetXPath()}: {type.FullName} is {problem} and so cannot be instantiated. Please use the class='typeName' attribute to specify a concrete class. Node will be ignored.");
                     return null;
                 }
 
@@ -238,7 +251,7 @@ namespace JXml
                     string attr = rootNode.TryGetAttribute("mode");
                     if(attr != null)
                     {
-                        Console.WriteLine($"[ERROR] Node {rootNode.GetXPath()}: Arrays cannot use merge modes. To use merge modes, change it to a List<{arrayType.Name}>.");
+                        OnLog?.Invoke($"[ERROR] Node {rootNode.GetXPath()}: Arrays cannot use merge modes. To use merge modes, change it to a List<{arrayType.Name}>.");
                     }
 
                     return created;
@@ -248,7 +261,7 @@ namespace JXml
                 {
                     if (!type.IsGenericType)
                     {
-                        Console.WriteLine($"[ERROR] Node {rootNode.GetXPath()}: Non-generic list type {type.Name} is not supported.");
+                        OnLog?.Invoke($"[ERROR] Node {rootNode.GetXPath()}: Non-generic list type {type.Name} is not supported.");
                         return null;
                     }
 
@@ -266,7 +279,7 @@ namespace JXml
 
                             if (atPosition == null && !allowNullValues)
                             {
-                                Console.WriteLine($"[ERROR] List {rootNode.GetXPath()} has a null value. This is not valid because the list type is {listType.Name}.");
+                                OnLog?.Invoke($"[ERROR] List {rootNode.GetXPath()} has a null value. This is not valid because the list type is {listType.Name}.");
                                 continue;
                             }
                             created.Add(atPosition);
@@ -279,7 +292,7 @@ namespace JXml
                     ListMergeMode mode = rootNode.TryParseAttributeEnum<ListMergeMode>("mode") ?? ListMergeMode.MergeReplace;
                     if((old.IsFixedSize || old.IsReadOnly) && mode != ListMergeMode.Replace)
                     {
-                        Console.WriteLine($"[ERROR] Node {rootNode.GetXPath()}: This List<{listType.Name}> uses merge mode {mode}, but the list instance is read-only. New list will replace old values.");
+                        OnLog?.Invoke($"[ERROR] Node {rootNode.GetXPath()}: This List<{listType.Name}> uses merge mode {mode}, but the list instance is read-only. New list will replace old values.");
                         mode = ListMergeMode.Replace;
                     }
 
@@ -292,7 +305,7 @@ namespace JXml
                 {
                     if (!type.IsGenericType)
                     {
-                        Console.WriteLine($"[ERROR] Node {rootNode.GetXPath()}: Non-generic dictionary type {type.Name} is not supported.");
+                        OnLog?.Invoke($"[ERROR] Node {rootNode.GetXPath()}: Non-generic dictionary type {type.Name} is not supported.");
                         return null;
                     }
                     Type[] dictParams = type.GetGenericArguments();
@@ -304,7 +317,7 @@ namespace JXml
                     bool useCompact = keyType == typeof(string) && (attrCompact == null || attrCompact.Value);
                     if(keyType != typeof(string) && attrCompact != null && attrCompact.Value)
                     {
-                        Console.WriteLine($"[ERROR] Node {rootNode.GetXPath()} has compact='true', but the dictionary has keys of type {keyType.Name}. They must be Strings to use compact mode.");
+                        OnLog?.Invoke($"[ERROR] Node {rootNode.GetXPath()} has compact='true', but the dictionary has keys of type {keyType.Name}. They must be Strings to use compact mode.");
                     }
                     bool allowNullValues = valueType.IsNullable();
                     if (useCompact)
@@ -319,19 +332,19 @@ namespace JXml
                             string key = node.TryGetAttribute("key");
                             if (key == null)
                             {
-                                Console.WriteLine($"[ERROR] Dictionary {rootNode.GetXPath()} has element at index {i} that does not have a key attribute, such as key='hello'. Compact mode is enabled. Use compact='false' to disable compact mode on this dictionary.");
+                                OnLog?.Invoke($"[ERROR] Dictionary {rootNode.GetXPath()} has element at index {i} that does not have a key attribute, such as key='hello'. Compact mode is enabled. Use compact='false' to disable compact mode on this dictionary.");
                                 continue;
                             }
                             if (created.Contains(key))
                             {
-                                Console.WriteLine($"[ERROR] Duplicate key in dictionary {rootNode.GetXPath()}: '{key}'");
+                                OnLog?.Invoke($"[ERROR] Duplicate key in dictionary {rootNode.GetXPath()}: '{key}'");
                                 continue;
                             }
                             object value = CreateAndPopulate(null, node, valueType);
 
                             if(value == null && !allowNullValues)
                             {
-                                Console.WriteLine($"[ERROR] Dictionary {rootNode.GetXPath()} has a null value. This is not valid because the value type is {valueType.Name}.");
+                                OnLog?.Invoke($"[ERROR] Dictionary {rootNode.GetXPath()} has a null value. This is not valid because the value type is {valueType.Name}.");
                                 continue;
                             }
 
@@ -359,7 +372,7 @@ namespace JXml
 
                             if(!isKey && !isValue)
                             {
-                                Console.WriteLine($"[ERROR] Dictionary {rootNode.Name} has an item at index {index} called '{node.Name}'. Dictionary items, when not in compact mode, should only be named either K or V. Value will be assumed to be a {(expectKey ? "key" : "value")}.");
+                                OnLog?.Invoke($"[ERROR] Dictionary {rootNode.Name} has an item at index {index} called '{node.Name}'. Dictionary items, when not in compact mode, should only be named either K or V. Value will be assumed to be a {(expectKey ? "key" : "value")}.");
                                 if (expectKey)
                                     isKey = true;
                                 else
@@ -368,12 +381,12 @@ namespace JXml
 
                             if(isKey && !expectKey)
                             {
-                                Console.WriteLine($"[ERROR] Dictionary {rootNode.Name} has two keys in a row! Item order must be key, value, key, value etc.");
+                                OnLog?.Invoke($"[ERROR] Dictionary {rootNode.Name} has two keys in a row! Item order must be key, value, key, value etc.");
                                 continue;
                             }
                             if (!isKey && expectKey)
                             {
-                                Console.WriteLine($"[ERROR] Dictionary {rootNode.Name} has two values in a row! Item order must be key, value, key, value etc.");
+                                OnLog?.Invoke($"[ERROR] Dictionary {rootNode.Name} has two values in a row! Item order must be key, value, key, value etc.");
                                 continue;
                             }
 
@@ -387,14 +400,14 @@ namespace JXml
                                 expectKey = true;
                                 if (created.Contains(lastKey))
                                 {
-                                    Console.WriteLine($"[ERROR] Duplicate key in dictionary {rootNode.GetXPath()}: '{lastKey}'");
+                                    OnLog?.Invoke($"[ERROR] Duplicate key in dictionary {rootNode.GetXPath()}: '{lastKey}'");
                                     lastKey = null;
                                     continue;
                                 }
                                 object value = CreateAndPopulate(null, node, valueType);
                                 if (value == null && !allowNullValues)
                                 {
-                                    Console.WriteLine($"[ERROR] Dictionary {rootNode.GetXPath()} has a null value. This is not valid because the value type is {valueType.Name}.");
+                                    OnLog?.Invoke($"[ERROR] Dictionary {rootNode.GetXPath()} has a null value. This is not valid because the value type is {valueType.Name}.");
                                     continue;
                                 }
                                 created.Add(lastKey, value);
@@ -409,7 +422,7 @@ namespace JXml
                     ListMergeMode mode = rootNode.TryParseAttributeEnum<ListMergeMode>("mode") ?? ListMergeMode.MergeReplace;
                     if ((oldDict.IsFixedSize || oldDict.IsReadOnly) && mode != ListMergeMode.Replace)
                     {
-                        Console.WriteLine($"[ERROR] Node {rootNode.Name}: This Dictionary<{keyType.Name}, {valueType.Name}> uses merge mode {mode}, but the dictioary instance is read-only. New dictionary will replace old values.");
+                        OnLog?.Invoke($"[ERROR] Node {rootNode.Name}: This Dictionary<{keyType.Name}, {valueType.Name}> uses merge mode {mode}, but the dictioary instance is read-only. New dictionary will replace old values.");
                         mode = ListMergeMode.Replace;
                     }
 
@@ -418,12 +431,26 @@ namespace JXml
                     return oldDict;
                 }
 
+                if (isEnumType)
+                {
+                    string textContent = rootNode.InnerText;
+                    try
+                    {
+                        var parsedEnum = Enum.Parse(type, textContent, true);
+                        return parsedEnum;
+                    }
+                    catch
+                    {
+                        OnLog?.Invoke($"Failed to parse '{textContent}' as enum {type.Name}");
+                    }
+                }
+
                 if (isBasic)
                 {
                     var firstChild = rootNode.FirstContentNode();
                     if (firstChild == null)
                     {
-                        Console.WriteLine($"[ERROR] Null value (empty tag) in node {rootNode.GetXPath()}. Expected a {loader.TargetType.Name}.");
+                        OnLog?.Invoke($"[ERROR] Null value (empty tag) in node {rootNode.GetXPath()}. Expected a {loader.TargetType.Name}.");
                         return null;
                     }
 
@@ -434,16 +461,20 @@ namespace JXml
                     }
                     catch (Exception e)
                     {
-                        Console.WriteLine($"[ERROR] Exception deserializing value '{firstChild.InnerText}' as a {loader.TargetType.Name} using loader {loader.GetType().Name} for node {firstChild.GetXPath()}:\n{e}");
+                        OnLog?.Invoke($"[ERROR] Exception deserializing value '{firstChild.InnerText}' as a {loader.TargetType.Name} using loader {loader.GetType().Name} for node {firstChild.GetXPath()}:\n{e}");
                         return null;
                     }
                 }
                 else
                 {
                     // Create new object (class or struct)
+                    bool didCreate = existing == null;
                     var created = existing ?? CreateInstance(type);
-                    if (rootObject == null)
-                        rootObject = created;
+                    if (didCreate && created is IXmlAware aware)
+                    {
+                        aware.OnCreateFromNode(rootNode);
+                    }
+                    rootObject ??= created;
                     parentObject = created;
 
                     // Get all child nodes in this node.
@@ -452,11 +483,11 @@ namespace JXml
                     {
                         var node = children.Item(i);
 
-                        //Console.WriteLine($"[{node.NodeType}] {node.Name}: {node.Value}");
+                        //OnLog?.Invoke($"[{node.NodeType}] {node.Name}: {node.Value}");
                         if(node.NodeType != XmlNodeType.Element && node.NodeType != XmlNodeType.Comment)
                         {
                             // You should not be here... Most likely a text. However, the xml loaded correctly, so it might be safe to ignore with just a warning.
-                            Console.WriteLine($"Unexpected node of type '{node.NodeType}' at {node.GetXPath()}. Content: '{node.Value?.Trim()}'. Please remove.");
+                            OnLog?.Invoke($"Unexpected node of type '{node.NodeType}' at {node.GetXPath()}. Content: '{node.Value?.Trim()}'. Please remove.");
                         }
                         if (node.NodeType != XmlNodeType.Element)
                             continue;
@@ -465,7 +496,7 @@ namespace JXml
                         var field = GetField(fieldName, type);
                         if (!field.IsValid)
                         {
-                            Console.WriteLine($"Error: Failed to find field '{type.FullName}.{fieldName}'");
+                            OnLog?.Invoke($"Error: Failed to find field '{type.FullName}.{fieldName}'");
                             continue;
                         }
 
@@ -475,8 +506,9 @@ namespace JXml
                         var childObj = CreateAndPopulate(ReadField(field, created), node, childType);
                         currentField = FieldWrapper.Invalid;
 
-                        WriteField(field, created, childObj);
+                        WriteField(field, created, childObj, node);
                     }
+
                     parentObject = null;
                     return created;
                 }
@@ -541,13 +573,13 @@ namespace JXml
             return default;
         }
 
-        private void WriteField(FieldWrapper wrapper, object obj, object value)
+        private void WriteField(FieldWrapper wrapper, object obj, object value, XmlNode node)
         {
             if (!wrapper.IsValid)
                 throw new Exception("Field wrapper is invalid.");
 
             if (wrapper.HasIgnoreAttribute)
-                throw new Exception($"Field '{wrapper}' has an [XmlIgnore] attribute, so cannot be written to from xml.");
+                throw new Exception($"Field '{wrapper}' has an [XmlIgnore] attribute, so cannot be written to from xml ({node?.GetXPath()}).");
 
             if (wrapper.IsField)
             {

@@ -7,7 +7,7 @@ namespace JXml.Utils
     {
         private static void ReportAttributeError(XmlNode node, string attrName, string value, string expectedType)
         {
-            Console.WriteLine($"Attribute error: Node {node.Name} has attribute {attrName}=\"{value}\", but it should be {expectedType}.");
+            XmlController.Log($"Attribute error: Node {node.Name} has attribute {attrName}=\"{value}\", but it should be {expectedType}.");
         }
 
         public static string TryGetAttribute(this XmlNode node, string attributeName)
@@ -107,6 +107,13 @@ namespace JXml.Utils
                 return true; // Nullable<T>
 
             return false; // value-type
+        }
+
+        public static bool IsRealNullable(this Type type)
+        {
+            if (Nullable.GetUnderlyingType(type) != null)
+                return true; // Nullable<T>
+            return false;
         }
 
         public static string GetXPath(this XmlNode node)

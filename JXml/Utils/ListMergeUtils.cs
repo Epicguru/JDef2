@@ -21,7 +21,7 @@ namespace JXml.Utils
 
             if((main.IsFixedSize || main.IsReadOnly) && mode != ListMergeMode.Replace)
             {
-                Console.WriteLine($"[ERROR] Main list is fixed size or read only.");
+                XmlController.Log("[ERROR] Main list is fixed size or read only.");
                 return;
             }
 
@@ -94,7 +94,7 @@ namespace JXml.Utils
                     break;
 
                 default:
-                    Console.WriteLine($"[ERROR] {mode} is not implemented.");
+                    XmlController.Log($"[ERROR] {mode} is not implemented.");
                     break;
             }
 
@@ -109,7 +109,7 @@ namespace JXml.Utils
 
             if ((main.IsFixedSize || main.IsReadOnly) && mode != ListMergeMode.Replace)
             {
-                Console.WriteLine($"[ERROR] Main dictionary is fixed size or read only.");
+                XmlController.Log("[ERROR] Main dictionary is fixed size or read only.");
                 return;
             }
 
@@ -160,7 +160,7 @@ namespace JXml.Utils
                     break;
 
                 default:
-                    Console.WriteLine($"[ERROR] {mode} is not implemented.");
+                    XmlController.Log($"[ERROR] {mode} is not implemented.");
                     break;
             }
         }

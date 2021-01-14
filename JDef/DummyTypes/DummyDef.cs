@@ -12,7 +12,7 @@
 
         public object GetRealObject()
         {
-            return db.GetNamed(DefName);
+            return db.Get(DefName);
         }
 
         public override bool Equals(object obj)

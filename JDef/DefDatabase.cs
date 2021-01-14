@@ -29,7 +29,7 @@ namespace JDef
             loader = new DefLoader(this);
         }
 
-        public Def GetNamed(string name)
+        public Def Get(string name)
         {
             if (string.IsNullOrEmpty(name))
                 return null;
@@ -39,9 +39,9 @@ namespace JDef
             return null;
         }
 
-        public T GetNamed<T>(string name) where T : Def
+        public T Get<T>(string name) where T : Def
         {
-            return GetNamed(name) as T;
+            return Get(name) as T;
         }
 
         public IEnumerable<T> GetAllOfType<T>()

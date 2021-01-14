@@ -380,7 +380,7 @@ namespace JXml.Serializers
             var found = TypeResolver.Resolve(text);
 
             if (found == null)
-                Console.WriteLine($"[WARN] Failed to resolve type '{text}' for node {node.GetXPath()}");
+                XmlController.Log($"[WARN] Failed to resolve type '{text}' for node {node.GetXPath()}");
 
             return found;
         }
